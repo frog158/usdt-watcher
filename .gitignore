@@ -1,0 +1,12 @@
+# local files
+wallet_monitor.conf
+wallet_monitor.log
+wallet_state.json
+
+# Python artifacts
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+tmp/
