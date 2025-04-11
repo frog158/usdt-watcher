@@ -10,7 +10,8 @@ import http.client
 import urllib.parse
 import uuid
 import signal
-
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 running = True
 
@@ -21,6 +22,27 @@ def handle_sigterm(signum, frame):
 
 signal.signal(signal.SIGTERM, handle_sigterm)
 signal.signal(signal.SIGINT, handle_sigterm)
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/ping":
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"pong")
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def log_message(self, format, *args):
+        return  # отключаем лог в stdout
+
+def run_health_server():
+    server = HTTPServer(("0.0.0.0", 8000), HealthHandler)
+    server.serve_forever()
+
+# Стартуем HTTP-сервер в фоне
+threading.Thread(target=run_health_server, daemon=True).start()
+
 
 # Set up logging
 def setup_logging(log_file):
@@ -48,9 +70,15 @@ def setup_logging(log_file):
 
 # Read configuration
 def read_config(config_file):
-    if not os.path.exists(config_file):
+    # Check both existence and non-zero size in one expression
+    if not (os.path.exists(config_file) and os.path.getsize(config_file) > 0):
+        # Show message based on the reason for creating default config
+        if os.path.exists(config_file):
+            print(f"Configuration file {config_file} is empty. Creating default configuration.")
+
         create_default_config(config_file)
 
+    # Read the configuration
     config = configparser.ConfigParser()
     config.read(config_file)
 
