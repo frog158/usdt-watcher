@@ -7,6 +7,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем скрипт
-COPY watcher.py .
+COPY wallet_monitor.py .
 
-CMD ["python", "watcher.py"]
+CMD ["python", "wallet_monitor.py"]
