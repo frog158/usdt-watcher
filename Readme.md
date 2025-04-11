@@ -10,23 +10,35 @@ A simple Python script that monitors USDT balance in an Ethereum wallet and send
 - Reports monitoring status to Uptime Kuma (optional)
 - Generates unique notification topics automatically
 - Logs all activities to file and console
+- Docker support for easy deployment
 
 ## Requirements
 
+If running directly:
 - Python 3.6+
-- Required Python packages: `requests`, `configparser`
+- Required Python packages (installed via requirements.txt):
+  - requests==2.32.3
+  - certifi==2025.1.31
+  - charset-normalizer==3.4.1
+  - idna==3.10
+  - urllib3==2.3.0
+
+If using Docker:
+- Docker installed on your system
 
 ## Installation
 
-1. Clone this repository or download the script:
+### Option 1: Standard Installation
+
+1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/wallet-monitor.git
-cd wallet-monitor
+git clone https://github.com/frog158/usdt-watcher.git
+cd usdt-watcher
 ```
 
 2. Install required dependencies:
 ```bash
-pip install requests configparser
+pip install -r requirements.txt
 ```
 
 3. Run the script once to generate the default configuration file:
@@ -35,6 +47,29 @@ python wallet_monitor.py
 ```
 
 4. Edit the configuration file (`wallet_monitor.conf`) to add your Etherscan API key, wallet address, and configure notification settings.
+
+### Option 2: Using Docker
+
+1. Pull the Docker image:
+```bash
+docker pull frog158/usdt-monitor
+```
+
+2. Create the necessary files for persistent storage:
+```bash
+touch wallet_state.json wallet_monitor.conf wallet_monitor.log
+```
+
+3. Run the container once to generate the configuration file:
+```bash
+docker run --rm \
+  -v $(pwd)/wallet_state.json:/app/wallet_state.json \
+  -v $(pwd)/wallet_monitor.conf:/app/wallet_monitor.conf \
+  -v $(pwd)/wallet_monitor.log:/app/wallet_monitor.log \
+  frog158/usdt-monitor
+```
+
+4. Edit the generated configuration file (`wallet_monitor.conf`) to add your Etherscan API key, wallet address, and notification settings.
 
 ## Configuration
 
@@ -116,6 +151,8 @@ message_retry_delay = 30
 
 ## Usage
 
+### Running with Python
+
 After configuring the script, you can run it:
 
 ```bash
@@ -123,6 +160,28 @@ python wallet_monitor.py
 ```
 
 For continuous monitoring, you can use a process manager like systemd, supervisor, or run it in a screen/tmux session.
+
+### Running with Docker
+
+After configuring the script, run the Docker container:
+
+```bash
+docker run -d --name usdt-monitor \
+  -v $(pwd)/wallet_state.json:/app/wallet_state.json \
+  -v $(pwd)/wallet_monitor.conf:/app/wallet_monitor.conf \
+  -v $(pwd)/wallet_monitor.log:/app/wallet_monitor.log \
+  frog158/usdt-monitor
+```
+
+To view logs:
+```bash
+docker logs -f usdt-monitor
+```
+
+To stop the container:
+```bash
+docker stop usdt-monitor
+```
 
 ### Setting Up ntfy.sh Notifications
 
@@ -141,7 +200,9 @@ To use Pushover:
 2. Create an application and get an app token
 3. Add your app token and user key to the configuration file
 
-## Running as a Service (Linux)
+## Running as a Service
+
+### Option 1: Using systemd (Linux)
 
 To run the script as a systemd service:
 
@@ -177,11 +238,54 @@ sudo systemctl start wallet-monitor.service
 sudo systemctl status wallet-monitor.service
 ```
 
+### Option 2: Using Docker with auto-restart
+
+Run the Docker container with auto-restart policy:
+
+```bash
+docker run -d --name usdt-monitor \
+  --restart unless-stopped \
+  -v $(pwd)/wallet_state.json:/app/wallet_state.json \
+  -v $(pwd)/wallet_monitor.conf:/app/wallet_monitor.conf \
+  -v $(pwd)/wallet_monitor.log:/app/wallet_monitor.log \
+  frog158/usdt-monitor
+```
+
+This will automatically restart the container if it crashes or if the Docker daemon restarts.
+
+## Building the Docker Image
+
+If you want to build the Docker image yourself instead of using the pre-built one:
+
+1. Clone the repository:
+```bash
+git clone https://github.com/frog158/usdt-watcher.git
+cd usdt-watcher
+```
+
+2. Build the Docker image:
+```bash
+docker build -t usdt-monitor .
+```
+
+3. Run your custom-built image:
+```bash
+docker run -d --name usdt-monitor \
+  -v $(pwd)/wallet_state.json:/app/wallet_state.json \
+  -v $(pwd)/wallet_monitor.conf:/app/wallet_monitor.conf \
+  -v $(pwd)/wallet_monitor.log:/app/wallet_monitor.log \
+  usdt-monitor
+```
+
+The repository already includes the `Dockerfile` and `requirements.txt` files needed for building.
+
 ## Troubleshooting
 
 - **API errors**: Make sure your Etherscan API key is valid and has not reached its request limit
 - **Balance not updating**: Verify the wallet address and USDT contract address are correct
 - **Notification issues**: Check notification service configuration and connectivity
+- **Docker volume issues**: Ensure the directories for mounted volumes exist and have proper permissions
+- **Docker container stopping**: Check logs with `docker logs usdt-monitor` to identify any errors
 
 ## Security Considerations
 
