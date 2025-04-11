@@ -5,10 +5,22 @@ import configparser
 import os
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import http.client
 import urllib.parse
 import uuid
+import signal
+
+
+running = True
+
+def handle_sigterm(signum, frame):
+    global running
+    print(f"[{datetime.now().isoformat()}] 🛑 Received stop signal ({signum})")
+    running = False
+
+signal.signal(signal.SIGTERM, handle_sigterm)
+signal.signal(signal.SIGINT, handle_sigterm)
 
 # Set up logging
 def setup_logging(log_file):
@@ -363,7 +375,7 @@ def main():
         previous_balance = None
         state = {"previous_balance": None, "last_check": None}
 
-    while True:
+    while running:
         retry_count = 0
         balance = None
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -466,9 +478,14 @@ def main():
             logger.error(f"Failed to get balance after {max_retries} attempts")
 
         # Wait until next check
-        next_check_time = datetime.now().strftime('%H:%M:%S')
+        next_check_time = (datetime.now() + timedelta(seconds=check_interval)).strftime('%H:%M:%S')
         logger.info(f"Next check at {next_check_time}")
-        time.sleep(check_interval)
+        for _ in range(check_interval):
+            if not running:
+                break
+            time.sleep(1)
+    logger.info(f"[{datetime.now().isoformat()}] 👋 Clean exit.")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
