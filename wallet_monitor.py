@@ -154,7 +154,8 @@ def get_usdt_balance(wallet_address, contract_address, api_key, logger):
             logger.info(f"Current USDT balance: {balance}")
             return balance
         else:
-            error_msg = data['message'] if 'message' in data else 'Unknown API error'
+            logger.error(f"Full API response: {data}")
+            error_msg = f"{data.get('message', 'Unknown API error')}: {data.get('result', '')}"
             logger.error(f"API Error: {error_msg}")
             raise Exception(f"Etherscan API error: {error_msg}")
     except Exception as e:
